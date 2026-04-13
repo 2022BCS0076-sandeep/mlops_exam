@@ -1,4 +1,3 @@
-import os
 import json
 import pandas as pd
 import joblib
@@ -11,7 +10,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 
 def main():
-    # 1. Load dataset
+    # Load dataset
     red_path = "dataset/wine+quality/winequality-red.csv"
     white_path = "dataset/wine+quality/winequality-white.csv"
 
@@ -20,7 +19,7 @@ def main():
 
     data = pd.concat([red, white], axis=0)
 
-    # 2. Split features and target
+    # Features & target
     X = data.drop("quality", axis=1)
     y = data["quality"]
 
@@ -28,46 +27,44 @@ def main():
         X, y, test_size=0.2, random_state=42
     )
 
-    # 3. Standardization
+    # Scaling
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
-    # 4. Feature Selection
+    # Feature selection
     selector = SelectKBest(score_func=f_regression, k=8)
-    X_train_selected = selector.fit_transform(X_train_scaled, y_train)
-    X_test_selected = selector.transform(X_test_scaled)
+    X_train = selector.fit_transform(X_train, y_train)
+    X_test = selector.transform(X_test)
 
-    # 5. Train model (Random Forest - 200 trees)
+    # Model
     model = RandomForestRegressor(
         n_estimators=200,
         random_state=42,
         n_jobs=-1
     )
-    model.fit(X_train_selected, y_train)
+    model.fit(X_train, y_train)
 
-    # 6. Evaluation
-    y_pred = model.predict(X_test_selected)
+    # Evaluation
+    y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
 
-    # 7. Save outputs
-    os.makedirs("output", exist_ok=True)
-    joblib.dump(model, "output/model.pkl")
+    # Save model (IMPORTANT: root folder)
+    joblib.dump(model, "model.pkl")
 
+    # Save metrics (IMPORTANT FORMAT)
     metrics = {
-        "Mean Squared Error": mse,
-        "R2 Score": r2
+        "mse": mse,
+        "r2": r2
     }
 
-    with open("output/metrics.json", "w") as f:
-        json.dump(metrics, f, indent=4)
+    with open("metrics.json", "w") as f:
+        json.dump(metrics, f)
 
-    # 8. Print metrics
-    print("Model Evaluation Results")
-    print("------------------------")
-    print(f"MSE: {mse:.4f}")
-    print(f"R² Score: {r2:.4f}")
+    # Print logs (required for exam)
+    print(f"MSE: {mse}")
+    print(f"R2: {r2}")
 
 
 if __name__ == "__main__":

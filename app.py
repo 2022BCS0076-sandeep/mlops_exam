@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 import joblib
 import numpy as np
 
@@ -9,41 +10,61 @@ app = FastAPI(
     version="1.0"
 )
 
-# Load trained model (from training pipeline)
-model = joblib.load("output/model.pkl")
+# Load trained model
+model = joblib.load("outputs/models/model.pkl")
 
-# Health check
+
+# -----------------------------
+# Request Schema (JSON input)
+# -----------------------------
+class WineFeatures(BaseModel):
+    fixed_acidity: float
+    volatile_acidity: float
+    citric_acid: float
+    residual_sugar: float
+    chlorides: float
+    free_sulfur_dioxide: float
+    total_sulfur_dioxide: float
+    density: float
+    pH: float
+    sulphates: float
+    alcohol: float
+
+
+# -----------------------------
+# Root Endpoint
+# -----------------------------
 @app.get("/")
 def read_root():
     return {"message": "Wine Quality Prediction API is running"}
 
-# Prediction endpoint
+
+# -----------------------------
+# Health Check (required for Jenkins)
+# -----------------------------
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+# -----------------------------
+# Prediction Endpoint
+# -----------------------------
 @app.post("/predict")
-def predict_wine_quality(
-    fixed_acidity: float,
-    volatile_acidity: float,
-    citric_acid: float,
-    residual_sugar: float,
-    chlorides: float,
-    free_sulfur_dioxide: float,
-    total_sulfur_dioxide: float,
-    density: float,
-    pH: float,
-    sulphates: float,
-    alcohol: float
-):
-    features = np.array([[  
-        fixed_acidity,
-        volatile_acidity,
-        citric_acid,
-        residual_sugar,
-        chlorides,
-        free_sulfur_dioxide,
-        total_sulfur_dioxide,
-        density,
-        pH,
-        sulphates,
-        alcohol
+def predict_wine_quality(data: WineFeatures):
+
+    features = np.array([[ 
+        data.fixed_acidity,
+        data.volatile_acidity,
+        data.citric_acid,
+        data.residual_sugar,
+        data.chlorides,
+        data.free_sulfur_dioxide,
+        data.total_sulfur_dioxide,
+        data.density,
+        data.pH,
+        data.sulphates,
+        data.alcohol
     ]])
 
     prediction = model.predict(features)
@@ -51,5 +72,5 @@ def predict_wine_quality(
     return {
         "name": "Sandeep Kumar",
         "roll_no": "2022BCS0076",
-        "predicted_wine_quality": int(prediction[0])
+        "prediction": int(prediction[0])
     }
